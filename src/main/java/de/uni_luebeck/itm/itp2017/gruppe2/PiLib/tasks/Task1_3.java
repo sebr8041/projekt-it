@@ -1,10 +1,19 @@
 package de.uni_luebeck.itm.itp2017.gruppe2.PiLib.tasks;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.stream.Collectors;
 
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+
+import com.pi4j.io.gpio.GpioController;
+import com.pi4j.io.gpio.GpioFactory;
+import com.pi4j.io.gpio.GpioPinDigitalOutput;
+import com.pi4j.io.gpio.PinState;
+import com.pi4j.io.gpio.RaspiPin;
 
 import de.dennis_boldt.RXTX;
 
@@ -19,8 +28,16 @@ public class Task1_3 implements Observer {
 	@Option(name = "--baud", usage = "Set baud rate")
 	public int baud = 115200;
 
+	GpioPinDigitalOutput led;
+
 	public Task1_3(String[] args)
 			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+
+		// create gpio controller
+		final GpioController gpio = GpioFactory.getInstance();
+
+		// provision gpio pin #01 as an output pin and turn on
+		led = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_07, PinState.LOW);
 
 		RXTX rxtx;
 		CmdLineParser parser = new CmdLineParser(this);
@@ -34,14 +51,40 @@ public class Task1_3 implements Observer {
 		}
 	}
 
+	private final List<Byte> buffer = new ArrayList<Byte>();
+
 	public void update(Observable o, Object arg) {
 		if (arg instanceof byte[]) {
 			byte[] bytes = (byte[]) arg;
-			System.out.print(new String(bytes));
-			float parseFloat = Float.parseFloat(new String(bytes));
-			if (parseFloat < 0.01) {
-				System.out.println("Gute NaCHT");
+			for (byte b : bytes) {
+				if ("0a".equals(String.format("%02x", b))) {
+					byte[] bt = new byte[buffer.size()];
+					for (int i = 0; i < bt.length; i++) {
+						bt[i] = buffer.get(i);
+					}
+
+					try {
+						String string = new String(bt);
+						System.out.println(string);
+						if (Float.parseFloat(string) < 70.0) {
+							led.setState(PinState.HIGH);
+						} else {
+							led.setState(PinState.LOW);
+						}
+
+					} catch (Throwable t) {
+
+					}
+					buffer.clear();
+				} else {
+					buffer.add(b);
+				}
 			}
+
+			// float parseFloat = Float.parseFloat(new String(bytes));
+			// if (parseFloat < 0.01) {
+			// System.out.println("Gute NaCHT");
+			// }
 		}
 	}
 }
