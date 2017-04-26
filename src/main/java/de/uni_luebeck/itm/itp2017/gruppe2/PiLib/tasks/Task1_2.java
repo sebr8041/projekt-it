@@ -9,9 +9,10 @@ import com.pi4j.io.gpio.RaspiPin;
 import com.pi4j.io.gpio.event.GpioPinDigitalStateChangeEvent;
 import com.pi4j.io.gpio.event.GpioPinListenerDigital;
 
-public class Task1_2 {
+public class Task1_2 implements ITask {
 
-	public static void main(String[] args) throws InterruptedException {
+	@Override
+	public void run(String[] args) throws Throwable {
 		// create gpio controller
 		final GpioController gpio = GpioFactory.getInstance();
 
@@ -23,7 +24,7 @@ public class Task1_2 {
 
 			public void handleGpioPinDigitalStateChangeEvent(GpioPinDigitalStateChangeEvent event) {
 				// display pin state on console
-				if(event.getState().compareTo(PinState.HIGH) == 0) {
+				if (event.getState().compareTo(PinState.HIGH) == 0) {
 					led.setState(PinState.HIGH);
 				} else {
 					led.setState(PinState.LOW);
@@ -32,8 +33,8 @@ public class Task1_2 {
 
 		});
 
-		while(true)
+		while (true)
 			Thread.sleep(5000);
 	}
-	
+
 }

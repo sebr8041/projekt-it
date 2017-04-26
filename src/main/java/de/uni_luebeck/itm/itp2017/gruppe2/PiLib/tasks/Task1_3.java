@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.pi4j.io.gpio.GpioController;
 import com.pi4j.io.gpio.GpioFactory;
@@ -17,8 +19,9 @@ import com.pi4j.io.gpio.RaspiPin;
 
 import de.dennis_boldt.RXTX;
 
-public class Task1_3 implements Observer {
+public class Task1_3 implements Observer, ITask {
 
+	private static final Logger LOG = LoggerFactory.getLogger(Task1_3.class);
 	@Option(name = "--ports", usage = "Set USB ports")
 	public String ports = null;
 
@@ -28,41 +31,45 @@ public class Task1_3 implements Observer {
 	@Option(name = "--baud", usage = "Set baud rate")
 	public int baud = 115200;
 
-	GpioPinDigitalOutput led;
-
-	public Task1_3(String[] args)
-			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-
-		// create gpio controller
-		final GpioController gpio = GpioFactory.getInstance();
-
-		// provision gpio pin #01 as an output pin and turn on
-		led = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_07, PinState.LOW);
-
-		RXTX rxtx;
-		CmdLineParser parser = new CmdLineParser(this);
-		try {
-			parser.parseArgument(args);
-			rxtx = new RXTX(this.baud);
-			rxtx.start(this.ports, this.rxtxlib, this);
-		} catch (Exception e) {
-			System.err.println(e.getMessage());
-			parser.printUsage(System.err);
-		}
-	}
-
+	// Buffer to collect bytes bytes for a float
 	private final List<Byte> buffer = new ArrayList<Byte>();
 
+	private GpioPinDigitalOutput led;
+
+//	public Task1_3(String[] args)
+//			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+//
+//		// create gpio controller
+//		final GpioController gpio = GpioFactory.getInstance();
+//
+//		// provision gpio pin #07 as an output pin and turn on
+//		led = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_07, PinState.LOW);
+//
+//		RXTX rxtx;
+//		CmdLineParser parser = new CmdLineParser(this);
+//		try {
+//			parser.parseArgument(args);
+//			rxtx = new RXTX(this.baud);
+//			rxtx.start(this.ports, this.rxtxlib, this);
+//		} catch (Exception e) {
+//			System.err.println(e.getMessage());
+//			parser.printUsage(System.err);
+//		}
+//	}
+
 	public void update(Observable o, Object arg) {
+		// is received object a byte array?
 		if (arg instanceof byte[]) {
 			byte[] bytes = (byte[]) arg;
 			for (byte b : bytes) {
+				// is next byte the delimiter? => parse the buffered bytes to float
 				if ("0a".equals(String.format("%02x", b))) {
 					byte[] bt = new byte[buffer.size()];
 					for (int i = 0; i < bt.length; i++) {
 						bt[i] = buffer.get(i);
 					}
 
+					// use try catch for robust input
 					try {
 						String string = new String(bt);
 						System.out.println(string);
@@ -73,7 +80,7 @@ public class Task1_3 implements Observer {
 						}
 
 					} catch (Throwable t) {
-
+						LOG.debug(t.getMessage(), t);
 					}
 					buffer.clear();
 				} else {
@@ -86,5 +93,27 @@ public class Task1_3 implements Observer {
 			// System.out.println("Gute NaCHT");
 			// }
 		}
+	}
+
+	@Override
+	public void run(String[] args) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+
+		// create gpio controller
+		final GpioController gpio = GpioFactory.getInstance();
+
+		// provision gpio pin #07 as an output pin and turn on
+		led = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_07, PinState.LOW);
+
+		RXTX rxtx;
+		CmdLineParser parser = new CmdLineParser(this);
+		try {
+			parser.parseArgument(args);
+			rxtx = new RXTX(this.baud);
+			rxtx.start(this.ports, this.rxtxlib, this);
+		} catch (Exception e) {
+			System.err.println(e.getMessage());
+			parser.printUsage(System.err);
+		}
+		
 	}
 }
