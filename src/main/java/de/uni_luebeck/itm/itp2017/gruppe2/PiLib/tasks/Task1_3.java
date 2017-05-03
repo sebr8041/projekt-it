@@ -36,33 +36,15 @@ public class Task1_3 implements Observer, ITask {
 
 	private GpioPinDigitalOutput led;
 
-//	public Task1_3(String[] args)
-//			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-//
-//		// create gpio controller
-//		final GpioController gpio = GpioFactory.getInstance();
-//
-//		// provision gpio pin #07 as an output pin and turn on
-//		led = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_07, PinState.LOW);
-//
-//		RXTX rxtx;
-//		CmdLineParser parser = new CmdLineParser(this);
-//		try {
-//			parser.parseArgument(args);
-//			rxtx = new RXTX(this.baud);
-//			rxtx.start(this.ports, this.rxtxlib, this);
-//		} catch (Exception e) {
-//			System.err.println(e.getMessage());
-//			parser.printUsage(System.err);
-//		}
-//	}
+	private final static double HIGH_BORDER = 70.0;
 
 	public void update(Observable o, Object arg) {
 		// is received object a byte array?
 		if (arg instanceof byte[]) {
 			byte[] bytes = (byte[]) arg;
 			for (byte b : bytes) {
-				// is next byte the delimiter? => parse the buffered bytes to float
+				// is next byte the delimiter? => parse the buffered bytes to
+				// float
 				if ("0a".equals(String.format("%02x", b))) {
 					byte[] bt = new byte[buffer.size()];
 					for (int i = 0; i < bt.length; i++) {
@@ -73,7 +55,7 @@ public class Task1_3 implements Observer, ITask {
 					try {
 						String string = new String(bt);
 						System.out.println(string);
-						if (Float.parseFloat(string) < 70.0) {
+						if (Float.parseFloat(string) < HIGH_BORDER) {
 							led.setState(PinState.HIGH);
 						} else {
 							led.setState(PinState.LOW);
@@ -87,16 +69,12 @@ public class Task1_3 implements Observer, ITask {
 					buffer.add(b);
 				}
 			}
-
-			// float parseFloat = Float.parseFloat(new String(bytes));
-			// if (parseFloat < 0.01) {
-			// System.out.println("Gute NaCHT");
-			// }
 		}
 	}
 
 	@Override
-	public void run(String[] args) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	public void run(String[] args)
+			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 
 		// create gpio controller
 		final GpioController gpio = GpioFactory.getInstance();
@@ -114,6 +92,6 @@ public class Task1_3 implements Observer, ITask {
 			System.err.println(e.getMessage());
 			parser.printUsage(System.err);
 		}
-		
+
 	}
 }
