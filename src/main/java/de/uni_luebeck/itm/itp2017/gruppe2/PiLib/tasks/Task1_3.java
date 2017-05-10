@@ -38,6 +38,12 @@ public class Task1_3 implements Observer, ITask {
 
 	private final static double HIGH_BORDER = 70.0;
 
+	private String currentValue = "00";
+	
+	public String getCurrentValue() {
+		return currentValue.substring(0, currentValue.length()-1);
+	}
+	
 	public void update(Observable o, Object arg) {
 		// is received object a byte array?
 		if (arg instanceof byte[]) {
@@ -55,6 +61,7 @@ public class Task1_3 implements Observer, ITask {
 					try {
 						String string = new String(bt);
 						System.out.println(string);
+						this.currentValue = string;
 						if (Float.parseFloat(string) < HIGH_BORDER) {
 							led.setState(PinState.HIGH);
 						} else {
@@ -92,6 +99,5 @@ public class Task1_3 implements Observer, ITask {
 			System.err.println(e.getMessage());
 			parser.printUsage(System.err);
 		}
-
 	}
 }
