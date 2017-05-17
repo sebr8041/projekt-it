@@ -20,7 +20,7 @@ import de.uzl.itm.ncoap.message.CoapResponse;
 import de.uzl.itm.ncoap.message.MessageCode;
 import de.uzl.itm.ncoap.message.MessageType;
 
-public class Task2_1 implements ITask {
+public class Task2 implements ITask {
 
 	@Option(name = "--host", usage = "Host of the SSP (ip or domain)")
 	private String SSP_HOST = "141.83.151.196";
@@ -31,7 +31,7 @@ public class Task2_1 implements ITask {
 	@Override
 	public void run(String[] args) throws Throwable {
 		// The args4j command line parser
-		CmdLineParser parser = new CmdLineParser(Task2_1.class);
+		CmdLineParser parser = new CmdLineParser(Task2.class);
 		parser.setUsageWidth(80);
 
 		// Parse the arguments
@@ -56,7 +56,9 @@ public class Task2_1 implements ITask {
 	 */
 	protected void calculateAvg(Task1_3 task) {
 		new Thread(() -> {
+			// object mapper to map json to objects
 			ObjectMapper objectMapper = new ObjectMapper();
+			// calculates the average of all ldr-value and stores it into variable ?v
 			String sparql = "PREFIX itm: <https://pit.itm.uni-luebeck.de/>\n"
 					+ "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
 					+ "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n" +
@@ -71,13 +73,16 @@ public class Task2_1 implements ITask {
 			while (true) {
 				try {
 					LinkedList<String> ll;
+					// get result lines from query
 					ll = rc.getResult();
-
+					// for each result
 					for (String s : ll) {
-
+						// map resulting json object to java object using objectMapper
 						SSPRestResult r = objectMapper.readValue(s, SSPRestResult.class);
+						// map the result inside the SSPRestResult to Java-Object 
 						InnerResults inner = objectMapper.readValue(r.getResults(), InnerResults.class);
 //						System.out.println("++++++++++++++++++++" + r.getResults());
+						// get value of variable v from the result
 						String value = inner.getResults().getBindings().get(0).get("v").getValue();
 						System.out.println("AVG: " + value);
 						task.setAvgValue(Float.parseFloat(value));

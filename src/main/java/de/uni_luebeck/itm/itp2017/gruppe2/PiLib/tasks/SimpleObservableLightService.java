@@ -169,6 +169,7 @@ public class SimpleObservableLightService extends ObservableWebresource<String> 
 
     @Override
     public void removeObserver(InetSocketAddress remoteAddress) {
+    	System.out.println("losing Observer...");
         try {
             this.lock.writeLock().lock();
             if (this.observations.remove(remoteAddress) != null) {
@@ -194,7 +195,8 @@ public class SimpleObservableLightService extends ObservableWebresource<String> 
         this.periodicUpdateFuture = this.getExecutor().scheduleAtFixedRate(() -> {
 		    try{
 		        String currentValue = task.getCurrentValue();
-		        System.out.println(currentValue);
+		        System.out.println("sending value "+ currentValue);
+		        System.out.println("observations: "+this.observations.size());
 				setResourceStatus(currentValue, updateInterval);
 		        LOG.info("New status of resource " + getUriPath() + ": " + getResourceStatus());
 		    } catch(Exception ex) {
