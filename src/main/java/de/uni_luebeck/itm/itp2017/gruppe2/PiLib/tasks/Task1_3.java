@@ -60,13 +60,8 @@ public class Task1_3 implements Observer, ITask {
 					// use try catch for robust input
 					try {
 						String string = new String(bt);
-						System.out.println(string);
+						//System.out.println(string);
 						this.currentValue = string;
-						if (Float.parseFloat(string) < HIGH_BORDER) {
-							led.setState(PinState.HIGH);
-						} else {
-							led.setState(PinState.LOW);
-						}
 
 					} catch (Throwable t) {
 						LOG.debug(t.getMessage(), t);
@@ -76,6 +71,14 @@ public class Task1_3 implements Observer, ITask {
 					buffer.add(b);
 				}
 			}
+		}
+	}
+	
+	public void setAvgValue(float avg) {
+		if (avg < HIGH_BORDER) {
+			led.setState(PinState.HIGH);
+		} else {
+			led.setState(PinState.LOW);
 		}
 	}
 

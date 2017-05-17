@@ -36,7 +36,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.log4j.Logger;
 
-import com.google.common.base.Strings;
 import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.SettableFuture;
 
@@ -52,47 +51,38 @@ import de.uzl.itm.ncoap.message.options.ContentFormat;
 
 /**
  * This {@link de.uzl.itm.ncoap.application.server.resource.Webresource} updates on a regular basis and provides
- * the current ldr value.
+ * the current UTC-time.
  *
+ * @author Oliver Kleine
  */
-public class SimpleObservableLightService extends ObservableWebresource<String> {
+public class SimpleObservableTimeService extends ObservableWebresource<Long> {
 
     public static long DEFAULT_CONTENT_FORMAT = ContentFormat.TEXT_PLAIN_UTF8;
 
-    private static Logger LOG = Logger.getLogger(SimpleObservableLightService.class.getName());
+    private static Logger LOG = Logger.getLogger(SimpleObservableTimeService.class.getName());
 
     private static HashMap<Long, String> payloadTemplates = new HashMap<>();
     static{
         //Add template for plaintext UTF-8 payload
         payloadTemplates.put(
                 ContentFormat.TEXT_PLAIN_UTF8,
-                "LDR: %s"
+                "The current time is %02d:%02d:%02d"
         );
 
         //Add template for XML payload
         payloadTemplates.put(
                 ContentFormat.APP_XML,
-                "<ldr>%s</ldr>\n"
+                "<time>\n" + "\t<hour>%02d</hour>\n" + "\t<minute>%02d</minute>\n" + "\t<second>%02d</second>\n</time>"
         );
-        
-        
         
         payloadTemplates.put(
 	        ContentFormat.APP_TURTLE,
-	        "@prefix gruppe2: <http://gruppe02.pit.itm.uni-luebeck.de/>\n" +
+	        "@prefix itm: <http://gruppe02.pit.itm.uni-luebeck.de/>\n" +
 	        "@prefix xsd: <http://www.w3.org/2001/XMLSchema#>\n" +
-	        "@prefix itm: <https://pit.itm.uni-luebeck.de/>\n"+
-	        "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"+
-	        "gruppe2:ldr rdf:type itm:Component.\n"+
-	        "gruppe2:ldr itm:hasStatus gruppe2:ldrStatus.\n"+
-	        "gruppe2:ldrStatus itm:hasValue \"%s\"^^xsd:string.\n"+
-	        "gruppe2:ldrStatus itm:hasScaleUnit \"Lux\"^^xsd:string.\n"+
-	        "gruppe2:ldr itm:isType \"LDR\"^^xsd:string.\n"+
-	        "gruppe2:myPi rdf:type itm:Device.\n"+
-	        "gruppe2:myPi itm:hasIP \"141.83.175.235\"^^xsd:string.\n"+
-	        "gruppe2:myPi itm:hasGroup \"PIT_02-SS17\"^^xsd:string.\n"+
-	        "gruppe2:myPi itm:hasLabel \"PIET\"^^xsd:string."
-
+	        "\n" + 
+	        "itm:time1 itm:hour \"%02d\"^^xsd:integer .\n" + 
+	       	"itm:time1 itm:minute \"%02d\"^^xsd:integer .\n" + 
+	       	"itm:time1 itm:seconds \"%02d\"^^xsd:integer ."
         );        
     }
 
@@ -102,22 +92,16 @@ public class SimpleObservableLightService extends ObservableWebresource<String> 
     // This is to handle whether update requests are confirmable or not (remoteSocket -> MessageType)
     private HashMap<InetSocketAddress, Integer> observations = new HashMap<>();
     private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private final Task1_3 task;
-    /**
-     * Creates a new instance of {@link SimpleObservableLightService}.
-     *
-     * @param path the path of this {@link SimpleObservableLightService} (e.g. /utc-time)
-     * @param updateInterval the interval (in seconds) for resource status updates (e.g. 5 for every 5 seconds).
-     * @throws IllegalAccessException 
-     * @throws IllegalArgumentException 
-     * @throws SecurityException 
-     * @throws NoSuchFieldException 
-     */
-    public SimpleObservableLightService(String path, int updateInterval, ScheduledExecutorService executor, Task1_3 task) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-        super(path, "0", executor);
 
-    	this.task = task;
-    	
+    /**
+     * Creates a new instance of {@link SimpleObservableTimeService}.
+     *
+     * @param path the path of this {@link SimpleObservableTimeService} (e.g. /utc-time)
+     * @param updateInterval the interval (in seconds) for resource status updates (e.g. 5 for every 5 seconds).
+     */
+    public SimpleObservableTimeService(String path, int updateInterval, ScheduledExecutorService executor) {
+        super(path, System.currentTimeMillis(), executor);
+
         //Set the update interval, i.e. the frequency of resource updates
         this.updateInterval = updateInterval;
         schedulePeriodicResourceUpdate();
@@ -184,23 +168,29 @@ public class SimpleObservableLightService extends ObservableWebresource<String> 
 
     @Override
     public byte[] getEtag(long contentFormat) {
-    	return task.getCurrentValue().getBytes();
+        return Longs.toByteArray(getResourceStatus() | (contentFormat << 56));
     }
 
 
+    @Override
+    public void updateEtag(Long resourceStatus) {
+        //nothing to do here as the ETAG is constructed on demand in the getEtag(long contentFormat) method
+    }
 
-    private void schedulePeriodicResourceUpdate() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 
-        this.periodicUpdateFuture = this.getExecutor().scheduleAtFixedRate(() -> {
-		    try{
-		        String currentValue = task.getCurrentValue();
-		        System.out.println(currentValue);
-				setResourceStatus(currentValue, updateInterval);
-		        LOG.info("New status of resource " + getUriPath() + ": " + getResourceStatus());
-		    } catch(Exception ex) {
-		        LOG.error("Exception while updating actual status...", ex);
-		    }
-		}, updateInterval, updateInterval, TimeUnit.SECONDS);
+    private void schedulePeriodicResourceUpdate() {
+        this.periodicUpdateFuture = this.getExecutor().scheduleAtFixedRate(new Runnable() {
+
+            @Override
+            public void run() {
+                try{
+                    setResourceStatus(System.currentTimeMillis(), updateInterval);
+                    LOG.info("New status of resource " + getUriPath() + ": " + getResourceStatus());
+                } catch(Exception ex) {
+                    LOG.error("Exception while updating actual time...", ex);
+                }
+            }
+        }, updateInterval, updateInterval, TimeUnit.SECONDS);
     }
 
 
@@ -234,6 +224,24 @@ public class SimpleObservableLightService extends ObservableWebresource<String> 
         } else {
             resourceStatus = getWrappedResourceStatus(coapRequest.getAcceptedContentFormats());
         }
+
+//        //Retrieve the accepted content formats from the request
+//        Set<Long> contentFormats = coapRequest.getAcceptedContentFormats();
+//
+//        //If accept option is not set in the request, use the default (TEXT_PLAIN_UTF8)
+//        if (contentFormats.isEmpty()) {
+//            contentFormats.add(DEFAULT_CONTENT_FORMAT);
+//        }
+//
+//        //Generate the payload of the response (depends on the accepted content formats, resp. the default
+//        WrappedResourceStatus resourceStatus = null;
+//        Iterator<Long> iterator = contentFormats.iterator();
+//        long contentFormat = DEFAULT_CONTENT_FORMAT;
+//
+//        while(resourceStatus == null && iterator.hasNext()) {
+//            contentFormat = iterator.next();
+//            resourceStatus = getWrappedResourceStatus(contentFormat);
+//        }
 
         CoapResponse coapResponse;
 
@@ -295,13 +303,12 @@ public class SimpleObservableLightService extends ObservableWebresource<String> 
         if (template == null) {
             return null;
         } else {
-            return String.format(template, getResourceStatus()).getBytes(CoapMessage.CHARSET);
+            long time = getResourceStatus() % 86400000;
+            long hours = time / 3600000;
+            long remainder = time % 3600000;
+            long minutes = remainder / 60000;
+            long seconds = (remainder % 60000) / 1000;
+            return String.format(template, hours, minutes, seconds).getBytes(CoapMessage.CHARSET);
         }
     }
-
-
-	@Override
-	public void updateEtag(String resourceStatus) {
-		
-	}
 }
