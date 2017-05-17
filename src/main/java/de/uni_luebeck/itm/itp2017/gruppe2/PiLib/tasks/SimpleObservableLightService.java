@@ -91,7 +91,8 @@ public class SimpleObservableLightService extends ObservableWebresource<String> 
 	        "gruppe2:myPi rdf:type itm:Device.\n"+
 	        "gruppe2:myPi itm:hasIP \"141.83.175.235\"^^xsd:string.\n"+
 	        "gruppe2:myPi itm:hasGroup \"PIT_02-SS17\"^^xsd:string.\n"+
-	        "gruppe2:myPi itm:hasLabel \"PIET\"^^xsd:string."
+	        "gruppe2:myPi itm:hasLabel \"PIET\"^^xsd:string.\n"+
+	        "gruppe2:ldr itm:hasURL \"coap://141.83.175.235:5683/ldr\"^^xsd:anyURI"
 
         );        
     }

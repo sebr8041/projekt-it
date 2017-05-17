@@ -64,8 +64,12 @@ public class Task2 implements ITask {
 					+ "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n" +
 
 					"SELECT  ( AVG(xsd:float(?value)) AS ?v ) WHERE {" + "?comp rdf:type itm:Component."
-					+ "?comp itm:isType \"LDR\"^^xsd:string." + "?comp itm:hasStatus ?status."
-					+ "?status itm:hasValue ?value." + "}";
+					+ 
+					"?comp itm:isType \"LDR\"^^xsd:string." + 
+					"?comp itm:hasStatus ?status."+ 
+					"?status itm:hasValue ?value." + 
+					"?status itm:hasScaleUnit \"Lux\"^^xsd:string."
+							+ "}";
 			String port = "8080";
 
 			RestClient rc = new RestClient(SSP_HOST, port, sparql, "application/sparql-results+json");
