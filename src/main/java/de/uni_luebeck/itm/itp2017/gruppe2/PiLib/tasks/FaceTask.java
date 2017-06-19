@@ -1,25 +1,12 @@
 package de.uni_luebeck.itm.itp2017.gruppe2.PiLib.tasks;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.util.LinkedList;
 import java.util.Scanner;
 
-import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.tools.javah.Util.Exit;
-
-import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.pojo.InnerResults;
-import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.pojo.SSPRestResult;
-import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.util.RestClient;
 import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.application.endpoint.CoapEndpoint;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -27,7 +14,16 @@ import de.uzl.itm.ncoap.message.CoapResponse;
 import de.uzl.itm.ncoap.message.MessageCode;
 import de.uzl.itm.ncoap.message.MessageType;
 
-public class Task3 implements ITask {
+/**
+ * FaceTask
+ * <p>
+ * This Task provides the /face enpoint for the SSP and reads the current users
+ * name from {@link System#in}
+ * 
+ * @author drickert
+ *
+ */
+public class FaceTask implements ITask {
 
 	@Option(name = "--host", usage = "Host of the SSP (ip or domain)")
 	private String SSP_HOST = "141.83.151.196";
@@ -35,29 +31,17 @@ public class Task3 implements ITask {
 	@Option(name = "--port", usage = "Port of the SSP")
 	private int SSP_PORT = 5683;
 
-	private String myIP = "";
 	private String execCode = "";
 
-	public Task3(String myIP) {
+	public FaceTask() {
 		super();
-		this.myIP = myIP;
 	}
 
 	@Override
 	public void run(String[] args) throws Throwable {
-		// The args4j command line parser
-		// CmdLineParser parser = new CmdLineParser(Task3.class);
-		// parser.setUsageWidth(80);
-
-		// Parse the arguments
 		try {
-			this.execCode = args[2];
-			// parser.parseArgument(args);
-
-			// create the coap server
+			// create an observable server
 			new Server(this);
-			// calculate average
-
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -70,6 +54,8 @@ public class Task3 implements ITask {
 	 *
 	 */
 	class Server extends CoapEndpoint {
+		// name of default-user
+		static final String UNKNOWN = "unknown";
 
 		/**
 		 * Constructor
@@ -83,10 +69,11 @@ public class Task3 implements ITask {
 		 * @throws IllegalAccessException
 		 * @throws URISyntaxException
 		 */
-		Server(Task3 task) throws IllegalArgumentException, NoSuchFieldException, SecurityException,
+		Server(FaceTask task) throws IllegalArgumentException, NoSuchFieldException, SecurityException,
 				IllegalAccessException, URISyntaxException {
 			super();
-			ObservableFaceService webresource = new ObservableFaceService("/face", 5, this.getExecutor(), task.myIP);
+			ObservableFaceService webresource = new ObservableFaceService("/face", 5, this.getExecutor());
+			// start the getFaces Thread, that reads the current faces from System.in
 			getFaces(webresource);
 			registerWebresource(webresource);
 
@@ -96,39 +83,51 @@ public class Task3 implements ITask {
 		}
 
 		void getFaces(ObservableFaceService webresource) {
+			final String UNKNOWN_FACE = "<Unknown>";
 			// set default face
-			webresource.setFace("default");
+			webresource.setFace(UNKNOWN);
+			// reading should be done in an own thread
 			new Thread(() -> {
-				Process process;
 				try {
-					process = Runtime.getRuntime().exec(execCode);
-				} catch (IOException e1) {
+					// create a scanner to read data
+					Scanner scanner = new Scanner(System.in);
+					while (true) {
+						try {
+							System.out.println("new face?");
+							// is a new face present?
+							if (scanner.hasNextLine()) {
+								String newFace = scanner.nextLine();
+								// is the face unknown?
+								if (UNKNOWN_FACE.equals(newFace)) {
+									// set the face to UNKNOWN-Constant
+									newFace = UNKNOWN;
+								}
+								System.out.println("new face is: " + newFace);
+								// tell resource about the new face
+								webresource.setFace(newFace);
+							} else {
+								System.out.println("no input available!");
+							}
+							// wait some time
+							Thread.sleep(1000);
+						} catch (Exception e) {
+							System.out.println(e.getMessage());
+							e.printStackTrace();
+						}
+
+					}
+				} catch (Throwable e1) {
 					e1.printStackTrace();
 					return;
-				}
-				Scanner scanner = new Scanner(process.getInputStream());
-				scanner.useDelimiter(">");
-				while (true) {
-					try {
-						System.out.println("new face?");
-						if (scanner.hasNext()) {
-							String newFace = scanner.next();
-							System.out.println("new face is: "+ newFace);
-							webresource.setFace(newFace);
-						}else{
-							System.out.println("no input available!");
-						}
-						Thread.sleep(1000);
-					} catch (Exception e) {
-						System.out.println(e.getMessage());
-						e.printStackTrace();
-					}
-
 				}
 			}).start();
 
 		}
 
+		/**
+		 * Register this endpoint at ssp
+		 * @throws URISyntaxException
+		 */
 		public void registerAtSSP() throws URISyntaxException {
 
 			URI resourceURI = new URI("coap", null, SSP_HOST, SSP_PORT, "/registry", null, null);
