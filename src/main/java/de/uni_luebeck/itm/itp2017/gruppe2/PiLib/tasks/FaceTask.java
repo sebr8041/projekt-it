@@ -25,6 +25,7 @@ import de.uzl.itm.ncoap.message.MessageType;
  */
 public class FaceTask implements ITask {
 
+	public static final String UNKNOWN = "unknown";
 	@Option(name = "--host", usage = "Host of the SSP (ip or domain)")
 	private String SSP_HOST = "141.83.151.196";
 
@@ -54,8 +55,6 @@ public class FaceTask implements ITask {
 	 *
 	 */
 	class Server extends CoapEndpoint {
-		// name of default-user
-		static final String UNKNOWN = "unknown";
 
 		/**
 		 * Constructor
@@ -73,7 +72,8 @@ public class FaceTask implements ITask {
 				IllegalAccessException, URISyntaxException {
 			super();
 			ObservableFaceService webresource = new ObservableFaceService("/face", 5, this.getExecutor());
-			// start the getFaces Thread, that reads the current faces from System.in
+			// start the getFaces Thread, that reads the current faces from
+			// System.in
 			getFaces(webresource);
 			registerWebresource(webresource);
 
@@ -126,6 +126,7 @@ public class FaceTask implements ITask {
 
 		/**
 		 * Register this endpoint at ssp
+		 * 
 		 * @throws URISyntaxException
 		 */
 		public void registerAtSSP() throws URISyntaxException {

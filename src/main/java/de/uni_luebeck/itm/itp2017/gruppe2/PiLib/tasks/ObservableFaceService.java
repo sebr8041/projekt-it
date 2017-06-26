@@ -143,7 +143,8 @@ public class ObservableFaceService extends ObservableWebresource<String> {
 
 	@Override
 	public byte[] getEtag(long contentFormat) {
-		return face.getBytes();
+		return face.substring(0, Math.min(7, face.length())).getBytes();
+		//return face.getBytes();
 	}
 
 	@Override
