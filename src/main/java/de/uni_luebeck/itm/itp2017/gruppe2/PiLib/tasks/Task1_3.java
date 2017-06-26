@@ -18,6 +18,7 @@ import com.pi4j.io.gpio.PinState;
 import com.pi4j.io.gpio.RaspiPin;
 
 import de.dennis_boldt.RXTX;
+import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.util.Configuration;
 
 public class Task1_3 implements Observer, ITask {
 
@@ -83,7 +84,7 @@ public class Task1_3 implements Observer, ITask {
 	}
 
 	@Override
-	public void run(String[] args)
+	public void run(Configuration config)
 			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 
 		// create gpio controller
@@ -93,14 +94,11 @@ public class Task1_3 implements Observer, ITask {
 		led = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_07, PinState.LOW);
 
 		RXTX rxtx;
-		CmdLineParser parser = new CmdLineParser(this);
 		try {
-			parser.parseArgument(args);
 			rxtx = new RXTX(this.baud);
 			rxtx.start(this.ports, this.rxtxlib, this);
 		} catch (Exception e) {
 			System.err.println(e.getMessage());
-			parser.printUsage(System.err);
 		}
 	}
 }

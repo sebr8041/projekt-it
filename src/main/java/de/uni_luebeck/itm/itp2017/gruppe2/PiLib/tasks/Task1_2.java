@@ -8,10 +8,12 @@ import com.pi4j.io.gpio.PinState;
 import com.pi4j.io.gpio.RaspiPin;
 import com.pi4j.io.gpio.event.GpioPinListenerDigital;
 
+import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.util.Configuration;
+
 public class Task1_2 implements ITask {
 
 	@Override
-	public void run(String[] args) throws Throwable {
+	public void run(Configuration config) throws Throwable {
 		// create gpio controller
 		final GpioController gpio = GpioFactory.getInstance();
 

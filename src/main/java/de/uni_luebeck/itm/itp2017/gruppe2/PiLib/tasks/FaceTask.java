@@ -7,6 +7,7 @@ import java.util.Scanner;
 
 import org.kohsuke.args4j.Option;
 
+import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.util.Configuration;
 import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.application.endpoint.CoapEndpoint;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -39,7 +40,9 @@ public class FaceTask implements ITask {
 	}
 
 	@Override
-	public void run(String[] args) throws Throwable {
+	public void run(Configuration config) throws Throwable {
+		SSP_HOST = config.getSSP_HOST();
+		SSP_PORT = config.getSSP_PORT();
 		try {
 			// create an observable server
 			new Server(this);

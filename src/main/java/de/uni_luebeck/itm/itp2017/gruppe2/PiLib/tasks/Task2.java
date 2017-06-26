@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.pojo.InnerResults;
 import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.pojo.SSPRestResult;
+import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.util.Configuration;
 import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.util.RestClient;
 import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.application.endpoint.CoapEndpoint;
@@ -29,16 +30,15 @@ public class Task2 implements ITask {
 	private int SSP_PORT = 5683;
 
 	@Override
-	public void run(String[] args) throws Throwable {
+	public void run(Configuration config) throws Throwable {
 		// The args4j command line parser
 		CmdLineParser parser = new CmdLineParser(Task2.class);
 		parser.setUsageWidth(80);
 
 		// Parse the arguments
 		try {
-			parser.parseArgument(args);
 			Task1_3 task = new Task1_3();
-			task.run(new String[0]);
+			task.run(config);
 			// create the coap server
 			new Server(task);
 			// calculate average
