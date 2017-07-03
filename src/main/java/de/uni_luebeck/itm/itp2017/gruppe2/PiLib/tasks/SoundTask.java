@@ -22,7 +22,7 @@ public class SoundTask implements ITask {
 	@Override
 	public void run(Configuration config) throws Throwable {
 		SSP_HOST = config.getSSP_HOST();
-		
+
 		findFaces();
 		findTemprature();
 	}
@@ -30,11 +30,13 @@ public class SoundTask implements ITask {
 	private enum Temperature {
 		Warm("warm"), Cold("cold");
 		private String tempName;
+
 		Temperature(String tempName) {
 			this.tempName = tempName;
 		}
+
 		String getTempName() {
-			return getTempName();
+			return tempName;
 		}
 	};
 
@@ -43,12 +45,10 @@ public class SoundTask implements ITask {
 		ObjectMapper objectMapper = new ObjectMapper();
 
 		String sparql = "" + "PREFIX gruppe2: <http://gruppe02.pit.itm.uni-luebeck.de/>"
-				+ "PREFIX itm: <https://pit.itm.uni-luebeck.de/>"
-				+ "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>" +
-
-				"SELECT ?temp WHERE {" 
-				// TODO write query
-				+ "}";
+				+ "PREFIX itm: <https://pit.itm.uni-luebeck.de/>" + "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>"
+				+ "PREFIX gruppe1: <http://gruppe01.pit.itm.uni-luebeck.de/>" + "SELECT ?temp WHERE {"
+				+ "gruppe1:tempSensor itm:hasStatus ?status." + "?status itm:hasValue ?temp."
+				+ "?status itm:hasScaleUnit \"Celcius\"^^xsd:string." + "}";
 
 		String port = "8080";
 
@@ -70,13 +70,13 @@ public class SoundTask implements ITask {
 						InnerResults inner = objectMapper.readValue(r.getResults(), InnerResults.class);
 						// get value of variable v from the result
 						if (inner.getResults().getBindings().isEmpty()) {
-							System.out.println("No results found!");
+							System.out.println("No results found for temperature!");
 							continue;
 						}
 						String value = inner.getResults().getBindings().get(0).get("temp").getValue();
-						if(Double.parseDouble(value)<BORDER_TEMPERATURE) {
+						if (Double.parseDouble(value) < BORDER_TEMPERATURE) {
 							currentTemperature = Temperature.Cold;
-						}else{
+						} else {
 							currentTemperature = Temperature.Warm;
 						}
 					}
@@ -93,7 +93,7 @@ public class SoundTask implements ITask {
 
 	public synchronized void playMusicFor(String name) {
 
-		String mp3 = "/opt/projekt-it/data/" + name + "/"+currentTemperature.getTempName();
+		String mp3 = "/opt/projekt-it/data/" + name + "/" + currentTemperature.getTempName();
 		if (soundThread != null) {
 			soundThread.stop();
 		}
@@ -130,7 +130,9 @@ public class SoundTask implements ITask {
 
 		@Override
 		public void run() {
-			play();
+			while (true) {
+				play();
+			}
 		}
 
 	}
@@ -145,7 +147,7 @@ public class SoundTask implements ITask {
 					+ "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>" +
 
 					"SELECT ?name WHERE {" + "?cam itm:isType \"Camera\"^^xsd:string." + "?cam itm:hasStatus ?status."
-					+ "?status itm:hasValue ?name.}";
+					+ "?status itm:hasValue ?name." + "?status itm:hasScaleUnit \"UID\"^^xsd:string." + "}";
 
 			String port = "8080";
 

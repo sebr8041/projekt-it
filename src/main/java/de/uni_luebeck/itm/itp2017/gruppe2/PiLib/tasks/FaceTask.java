@@ -1,11 +1,16 @@
 package de.uni_luebeck.itm.itp2017.gruppe2.PiLib.tasks;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.util.Scanner;
 
 import org.kohsuke.args4j.Option;
+
+import com.google.common.io.Files;
 
 import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.util.Configuration;
 import de.uzl.itm.ncoap.application.client.ClientCallback;
@@ -35,6 +40,7 @@ public class FaceTask implements ITask {
 
 	private String execCode = "";
 
+	private Configuration configuration;
 	public FaceTask() {
 		super();
 	}
@@ -43,6 +49,7 @@ public class FaceTask implements ITask {
 	public void run(Configuration config) throws Throwable {
 		SSP_HOST = config.getSSP_HOST();
 		SSP_PORT = config.getSSP_PORT();
+		configuration = config;
 		try {
 			// create an observable server
 			new Server(this);
@@ -104,6 +111,9 @@ public class FaceTask implements ITask {
 								if (UNKNOWN_FACE.equals(newFace)) {
 									// set the face to UNKNOWN-Constant
 									newFace = UNKNOWN;
+									webresource.setUserName(UNKNOWN);
+								}else {
+									webresource.setUserName(getUserName(newFace));
 								}
 								System.out.println("new face is: " + newFace);
 								// tell resource about the new face
@@ -127,6 +137,18 @@ public class FaceTask implements ITask {
 
 		}
 
+		String getUserName(String uid) {
+			try {
+				String filepath = configuration.getDATA_PATH()+"/"+uid+"/name";
+				System.out.println("read username from "+filepath);
+				return Files.readFirstLine(new File(filepath), Charset.defaultCharset());
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return UNKNOWN;
+		}
+		
 		/**
 		 * Register this endpoint at ssp
 		 * 

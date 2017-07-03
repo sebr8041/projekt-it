@@ -39,7 +39,8 @@ public class ObservableFaceService extends ObservableWebresource<String> {
 	public static long DEFAULT_CONTENT_FORMAT = ContentFormat.TEXT_PLAIN_UTF8;
 
 	private static Logger LOG = Logger.getLogger(SimpleObservableTimeService.class.getName());
-	private String face = "";
+	private String face = FaceTask.UNKNOWN;
+	private String userName = FaceTask.UNKNOWN;
 	// templates
 	private static HashMap<Long, String> payloadTemplates = new HashMap<>();
 	static {
@@ -56,7 +57,12 @@ public class ObservableFaceService extends ObservableWebresource<String> {
 						+ "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
 						+ "gruppe2:cam rdf:type itm:Component.\n" + "gruppe2:cam itm:hasStatus gruppe2:camStatus.\n"
 						+ "gruppe2:camStatus itm:hasValue \"%s\"^^xsd:string.\n"
-						+ "gruppe2:camStatus itm:hasScaleUnit \"Name\"^^xsd:string.\n"
+						+ "gruppe2:camStatus itm:hasScaleUnit \"UID\"^^xsd:string.\n"
+
+						+ "gruppe2:cam itm:hasStatus gruppe2:camStatusName.\n"
+						+ "gruppe2:camStatusName itm:hasValue \"%s\"^^xsd:string.\n"
+						+ "gruppe2:camStatusName itm:hasScaleUnit \"Name\"^^xsd:string.\n"
+
 						+ "gruppe2:cam itm:isType \"Camera\"^^xsd:string.\n" + "gruppe2:myPi rdf:type itm:Device.\n"
 						+ "gruppe2:myPi itm:hasIP \"141.83.175.235\"^^xsd:string.\n"
 						+ "gruppe2:myPi itm:hasGroup \"PIT_02-SS17\"^^xsd:string.\n"
@@ -112,6 +118,10 @@ public class ObservableFaceService extends ObservableWebresource<String> {
 		this.face = face;
 	}
 
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+	
 	@Override
 	public boolean isUpdateNotificationConfirmable(InetSocketAddress remoteAddress) {
 		try {
@@ -144,7 +154,7 @@ public class ObservableFaceService extends ObservableWebresource<String> {
 	@Override
 	public byte[] getEtag(long contentFormat) {
 		return face.substring(0, Math.min(7, face.length())).getBytes();
-		//return face.getBytes();
+		// return face.getBytes();
 	}
 
 	@Override
@@ -259,7 +269,7 @@ public class ObservableFaceService extends ObservableWebresource<String> {
 		if (template == null) {
 			return null;
 		} else {
-			return String.format(template, face).getBytes();
+			return String.format(template, face, userName).getBytes();
 		}
 	}
 }

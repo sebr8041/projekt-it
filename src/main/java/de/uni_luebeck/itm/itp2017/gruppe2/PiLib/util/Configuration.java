@@ -18,7 +18,6 @@ public class Configuration {
 	private String IP;
 	
 	
-	
 	{
 		try {
 			IP = InetAddress.getLocalHost().getHostAddress();
