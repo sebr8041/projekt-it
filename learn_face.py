@@ -4,12 +4,8 @@ import pickle
 import numpy
 import os, time
 
-# Take a picture
-#camera = picamera.PiCamera()
-#name = raw_input("Please enter your name and press enter to take a picture!")
-#camera.capture('image.jpg')
+path_to_watch = "/opt/projekt-it/data/"
 
-path_to_watch = "./data/"
 before = dict([(f, None) for f in os.listdir (path_to_watch)])
 
 while 1:

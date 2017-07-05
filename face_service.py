@@ -7,7 +7,7 @@ import sys
 import os
 import pickle
 
-path = "./data/"
+path = "/opt/projekt-it/data/"
 
 face_locations = []
 face_encodings = []
@@ -17,27 +17,39 @@ faces_to_compare_uuids = []
 
 camera = picamera.PiCamera()
 camera.resolution = (320, 240)
-output = np.empty((240, 320, 3), dtype=np.uint8)
+output = np.empty((240 * 320 * 3), dtype=np.uint8)
 
+# load known encoded faces
 data = dict([(f, None) for f in os.listdir (path)])
 for uuid in data:
-    if os.path.isdir(path+uuid):
+    if os.path.isdir(path+uuid) and os.path.exists(path+uuid+'/encoding'):
         faces_to_compare_faces.append(pickle.load(open(path+uuid+'/encoding', "rb")))
         faces_to_compare_uuids.append(uuid)
 
 while True:
-    camera.capture('image.jpg')
-    output = face_recognition.load_image_file("image.jpg")
+    # watch for new encoded faces online
+    new_data = dict([(f, None) for f in os.listdir (path)])
+    added = [f for f in new_data if not f in data]
+    if added:
+        time.sleep(20) # encoding might not be there
+        for uuid in added:
+		if os.path.exists(path+uuid+'/encoding'):
+            		faces_to_compare_faces.append(pickle.load(open(path+uuid+'/encoding', "rb")))
+            		faces_to_compare_uuids.append(uuid)
+			data = new_data
 
-    face_locations = face_recognition.face_locations(output)
-    face_encodings = face_recognition.face_encodings(output, face_locations)
+    # take a picture
+    camera.capture(output, format = 'rgb')
+    output_shaped = output.reshape((240,320,3))
 
+    # recognize face
+    face_locations = face_recognition.face_locations(output_shaped)
+    face_encodings = face_recognition.face_encodings(output_shaped, face_locations)
     for face_encoding in face_encodings:
         matches = face_recognition.compare_faces(faces_to_compare_faces, face_encoding)
         name = "<Unknown>"
-		
         if True in matches:
             name = faces_to_compare_uuids[matches.index(True)]
 
         print("{}".format(name))
-        sys.stdout.flush()
+        sys.stdout.flush() # instant output for piping
