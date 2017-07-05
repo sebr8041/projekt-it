@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title></title>
+	<meta name="viewport" content="initial-scale=1.0,width=device-width" />
+	<script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+</head>
+
+<body>
+<h2 id="demo">Upload image and music</h2>
+<pre id="userinfo"></pre>
+<p><video id="video" autoplay="autoplay"></video></p>
+<p><canvas style="display:none;" id="canvas"></canvas></p>
+<p><input type="button" id="buttonSnap" value="Snap Photo" onclick="snapshot()" /></p>
+<p>Name: <input id="name" name="name" type="text" /></p>
+<p>Music Warm: <input id="warm" name="warm" type="file" /></p>
+<p>Music Cold: <input id="cold" name="cold" type="file" /></p>
+<p><input type="button" id="buttonSave" value="Save Data" disabled="disabled" onclick="save()" /></p>
+<p><canvas id="canvas"></canvas></p>
+
+<script type="text/javascript">
+"use strict";
+var video = document.getElementById('video');
+var canvas = document.getElementById('canvas');
+var videoStream = null;
+var userInfo = $('#userinfo');
+
+function log(text)
+{
+	console.log(text);
+}
+
+function info(text)
+{
+	userInfo.append(text+"<br/>");
+}
+
+function save() {
+	document.getElementById('buttonSave').disabled = true;
+
+	var data = new FormData();
+	
+	var name = $("#name").prop('value');
+	var image = canvas.toDataURL();
+	var warm = $("#warm").prop('files')[0];
+	var cold = $("#cold").prop('files')[0];
+	
+	data.append("image", image);
+	data.append("warm", warm);
+	data.append("cold", cold);
+	data.append("name", name)
+	
+	info("starting upload...");
+	$.ajax({
+	  type: "POST",
+	  url: "/",
+	  data: data,
+	  cache: false,
+	  contentType: false,
+	  processData: false
+	}).done(function(e) {
+		info("successfully uploaded yor data!");
+	});
+}
+
+function snapshot()
+{
+	canvas.width = video.videoWidth;
+	canvas.height = video.videoHeight;
+	canvas.getContext('2d').drawImage(video, 0, 0);
+	stop();
+	video.style.display = 'none';
+	canvas.style.display = 'block';
+	document.getElementById('buttonSave').disabled = false;
+}
+
+function noStream()
+{
+	log('Access to camera was denied!');
+}
+
+function stop()
+{
+	var myButton = document.getElementById('buttonStop');
+	if (myButton) myButton.disabled = true;
+	myButton = document.getElementById('buttonSnap');
+	if (myButton) myButton.disabled = true;
+	if (videoStream)
+	{
+		if (videoStream.stop) videoStream.stop();
+		else if (videoStream.msStop) videoStream.msStop();
+		videoStream.onended = null;
+		videoStream = null;
+	}
+	if (video)
+	{
+		video.onerror = null;
+		video.pause();
+		if (video.mozSrcObject)
+			video.mozSrcObject = null;
+		video.src = "";
+	}
+	myButton = document.getElementById('buttonStart');
+	if (myButton) myButton.disabled = false;
+}
+
+function gotStream(stream)
+{
+	var myButton = document.getElementById('buttonStart');
+	if (myButton) myButton.disabled = true;
+	videoStream = stream;
+	log('Got stream.');
+	video.onerror = function ()
+	{
+		log('video.onerror');
+		if (video) stop();
+	};
+	stream.onended = noStream;
+	if (window.webkitURL) video.src = window.webkitURL.createObjectURL(stream);
+	else if (video.mozSrcObject !== undefined)
+	{//FF18a
+		video.mozSrcObject = stream;
+		video.play();
+	}
+	else if (navigator.mozGetUserMedia)
+	{//FF16a, 17a
+		video.src = stream;
+		video.play();
+	}
+	else if (window.URL) video.src = window.URL.createObjectURL(stream);
+	else video.src = stream;
+	myButton = document.getElementById('buttonSnap');
+	if (myButton) myButton.disabled = false;
+	myButton = document.getElementById('buttonStop');
+	if (myButton) myButton.disabled = false;
+}
+
+function start()
+{
+	if ((typeof window === 'undefined') || (typeof navigator === 'undefined')) log('This page needs a Web browser with the objects window.* and navigator.*!');
+	else if (!(video && canvas)) log('HTML context error!');
+	else
+	{
+		log('Get user media…');
+		if (navigator.getUserMedia) navigator.getUserMedia({video:true}, gotStream, noStream);
+		else if (navigator.oGetUserMedia) navigator.oGetUserMedia({video:true}, gotStream, noStream);
+		else if (navigator.mozGetUserMedia) navigator.mozGetUserMedia({video:true}, gotStream, noStream);
+		else if (navigator.webkitGetUserMedia) navigator.webkitGetUserMedia({video:true}, gotStream, noStream);
+		else if (navigator.msGetUserMedia) navigator.msGetUserMedia({video:true, audio:false}, gotStream, noStream);
+		else log('getUserMedia() not available from your Web browser!');
+	}
+}
+
+start();
+</script>
+</body>
+</html>
