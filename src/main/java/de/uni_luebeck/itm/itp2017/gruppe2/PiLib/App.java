@@ -19,6 +19,7 @@ public class App {
 		cmdLineParser.parseArgument(args);
 		
 		System.out.println("starting...");
+		// decide whether to start the face or sound task.
 		if ("face".equals(config.getMODE())) {
 			new FaceTask().run(config);
 		} else {

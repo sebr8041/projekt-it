@@ -32,21 +32,20 @@ import de.uzl.itm.ncoap.message.MessageType;
 public class FaceTask implements ITask {
 
 	public static final String UNKNOWN = "unknown";
-	@Option(name = "--host", usage = "Host of the SSP (ip or domain)")
-	private String SSP_HOST = "141.83.151.196";
-
-	@Option(name = "--port", usage = "Port of the SSP")
-	private int SSP_PORT = 5683;
-
-	private String execCode = "";
-
+	private String SSP_HOST;
+	private int SSP_PORT;
 	private Configuration configuration;
+
+	/**
+	 * Default Constructor
+	 */
 	public FaceTask() {
 		super();
 	}
 
 	@Override
 	public void run(Configuration config) throws Throwable {
+		// get required config-values
 		SSP_HOST = config.getSSP_HOST();
 		SSP_PORT = config.getSSP_PORT();
 		configuration = config;
@@ -92,6 +91,11 @@ public class FaceTask implements ITask {
 
 		}
 
+		/**
+		 * Method that reads the current face from {@link System#in}
+		 * 
+		 * @param webresource
+		 */
 		void getFaces(ObservableFaceService webresource) {
 			final String UNKNOWN_FACE = "<Unknown>";
 			// set default face
@@ -112,7 +116,7 @@ public class FaceTask implements ITask {
 									// set the face to UNKNOWN-Constant
 									newFace = UNKNOWN;
 									webresource.setUserName(UNKNOWN);
-								}else {
+								} else {
 									webresource.setUserName(getUserName(newFace));
 								}
 								System.out.println("new face is: " + newFace);
@@ -137,10 +141,16 @@ public class FaceTask implements ITask {
 
 		}
 
+		/**
+		 * Takes the uid and returns the corresponding userName.
+		 * 
+		 * @param uid
+		 * @return The userName
+		 */
 		String getUserName(String uid) {
 			try {
-				String filepath = configuration.getDATA_PATH()+"/"+uid+"/name";
-				System.out.println("read username from "+filepath);
+				String filepath = configuration.getDATA_PATH() + "/" + uid + "/name";
+				System.out.println("read username from " + filepath);
 				return Files.readFirstLine(new File(filepath), Charset.defaultCharset());
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -148,7 +158,7 @@ public class FaceTask implements ITask {
 			}
 			return UNKNOWN;
 		}
-		
+
 		/**
 		 * Register this endpoint at ssp
 		 * 

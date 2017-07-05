@@ -7,26 +7,41 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.pojo.InnerResults;
 import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.pojo.SSPRestResult;
+import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.service.SparqlParser;
 import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.util.Configuration;
 import de.uni_luebeck.itm.itp2017.gruppe2.PiLib.util.RestClient;
 import javazoom.jl.player.advanced.AdvancedPlayer;
 
+/**
+ * This Task asks the SSP for the current user and temperature to play the right
+ * music.
+ * 
+ * @author drickert
+ *
+ */
 public class SoundTask implements ITask {
 
-	private String SSP_HOST = "141.83.151.196";
-	private Thread soundThread;
 	private static final double BORDER_TEMPERATURE = 10.0;
-	private String lastUser = "";
 	private Temperature currentTemperature = Temperature.Cold;
+	private String SSP_HOST;
+	private Thread soundThread;
+	private String lastUser = "";
 
 	@Override
 	public void run(Configuration config) throws Throwable {
+		// get the ssp-host from configuration
 		SSP_HOST = config.getSSP_HOST();
 
 		findFaces();
 		findTemprature();
 	}
 
+	/**
+	 * Possible Temperatures
+	 * 
+	 * @author drickert
+	 *
+	 */
 	private enum Temperature {
 		Warm("warm"), Cold("cold");
 		private String tempName;
@@ -40,10 +55,10 @@ public class SoundTask implements ITask {
 		}
 	};
 
+	/**
+	 * Starts a Thread that fetches periodic the current Temperature
+	 */
 	private void findTemprature() {
-		// object mapper to map json to objects
-		ObjectMapper objectMapper = new ObjectMapper();
-
 		String sparql = "PREFIX gruppe2: <http://gruppe02.pit.itm.uni-luebeck.de/>"
 				+ "PREFIX itm: <https://pit.itm.uni-luebeck.de/>" + "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>"
 				+ "PREFIX gruppe1: <http://gruppe01.pit.itm.uni-luebeck.de/>" + "SELECT ?temp WHERE {"
@@ -62,13 +77,7 @@ public class SoundTask implements ITask {
 					ll = rc.getResult();
 					// for each result
 					for (String s : ll) {
-						// map resulting json object to java object using
-						// objectMapper
-						SSPRestResult r = objectMapper.readValue(s, SSPRestResult.class);
-						// map the result inside the SSPRestResult to
-						// Java-Object
-						InnerResults inner = objectMapper.readValue(r.getResults(), InnerResults.class);
-						// get value of variable v from the result
+						InnerResults inner = SparqlParser.parseJson(s);
 						if (inner.getResults().getBindings().isEmpty()) {
 							System.out.println("No results found for temperature!");
 							continue;
@@ -84,15 +93,20 @@ public class SoundTask implements ITask {
 					Thread.sleep(10000);
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
 		}).start();
 	}
 
+	/**
+	 * Plays music for the passed user
+	 * 
+	 * @param name
+	 */
 	public synchronized void playMusicFor(String name) {
 
+		// path to the mp3-file
 		String mp3 = "/opt/projekt-it/data/" + name + "/" + currentTemperature.getTempName();
 		if (soundThread != null) {
 			soundThread.stop();
@@ -102,27 +116,34 @@ public class SoundTask implements ITask {
 
 	}
 
+	/**
+	 * Player for MP3-Files
+	 * 
+	 * @author drickert
+	 *
+	 */
 	class Mp3Player implements Runnable {
 
 		private String filename;
 		private AdvancedPlayer player;
 
+		/**
+		 * Constructor
+		 * @param filename
+		 */
 		Mp3Player(String filename) {
 			this.filename = filename;
 		}
 
+		/**
+		 * Play the file
+		 */
 		public void play() {
 			try {
-				System.out.println("before buffer");
 				FileInputStream buffer = new FileInputStream(filename);
-				System.out.println("new advanced player");
 				player = new AdvancedPlayer(buffer);
-				System.out.println("play");
 				player.play();
-				System.out.println("after play");
-
 			} catch (Exception e) {
-
 				System.out.println(e);
 			}
 
@@ -130,6 +151,7 @@ public class SoundTask implements ITask {
 
 		@Override
 		public void run() {
+			// always repeat the mp3
 			while (true) {
 				play();
 			}
@@ -137,11 +159,11 @@ public class SoundTask implements ITask {
 
 	}
 
+	/**
+	 * Starts a Thread that fetches the current user periodically
+	 */
 	protected void findFaces() {
 		new Thread(() -> {
-			// object mapper to map json to objects
-			ObjectMapper objectMapper = new ObjectMapper();
-
 			String sparql = "" + "PREFIX gruppe2: <http://gruppe02.pit.itm.uni-luebeck.de/>"
 					+ "PREFIX itm: <https://pit.itm.uni-luebeck.de/>"
 					+ "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>" +
@@ -161,22 +183,15 @@ public class SoundTask implements ITask {
 					ll = rc.getResult();
 					// for each result
 					for (String s : ll) {
-						// map resulting json object to java object using
-						// objectMapper
-						SSPRestResult r = objectMapper.readValue(s, SSPRestResult.class);
-						// map the result inside the SSPRestResult to
-						// Java-Object
-						InnerResults inner = objectMapper.readValue(r.getResults(), InnerResults.class);
-						// System.out.println("++++++++++++++++++++" +
-						// r.getResults());
-						// get value of variable v from the result
+						InnerResults inner = SparqlParser.parseJson(s);
 						if (inner.getResults().getBindings().isEmpty()) {
 							System.out.println("No results found!");
 							continue;
 						}
 						String value = inner.getResults().getBindings().get(0).get("name").getValue();
 						if (!FaceTask.UNKNOWN.equals(value)) {
-							System.out.println("Playing music for: " + value + " ("+currentTemperature.getTempName()+")");
+							System.out.println(
+									"Playing music for: " + value + " (" + currentTemperature.getTempName() + ")");
 							if (!lastUser.equals(value)) {
 								playMusicFor(value);
 								lastUser = value;
@@ -189,7 +204,6 @@ public class SoundTask implements ITask {
 					Thread.sleep(1000);
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
