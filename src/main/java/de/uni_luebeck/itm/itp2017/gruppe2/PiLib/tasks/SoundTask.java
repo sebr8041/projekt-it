@@ -44,7 +44,7 @@ public class SoundTask implements ITask {
 		// object mapper to map json to objects
 		ObjectMapper objectMapper = new ObjectMapper();
 
-		String sparql = "" + "PREFIX gruppe2: <http://gruppe02.pit.itm.uni-luebeck.de/>"
+		String sparql = "PREFIX gruppe2: <http://gruppe02.pit.itm.uni-luebeck.de/>"
 				+ "PREFIX itm: <https://pit.itm.uni-luebeck.de/>" + "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>"
 				+ "PREFIX gruppe1: <http://gruppe01.pit.itm.uni-luebeck.de/>" + "SELECT ?temp WHERE {"
 				+ "gruppe1:tempSensor itm:hasStatus ?status." + "?status itm:hasValue ?temp."
@@ -176,7 +176,7 @@ public class SoundTask implements ITask {
 						}
 						String value = inner.getResults().getBindings().get(0).get("name").getValue();
 						if (!FaceTask.UNKNOWN.equals(value)) {
-							System.out.println("Playing music for: " + value);
+							System.out.println("Playing music for: " + value + " ("+currentTemperature.getTempName()+")");
 							if (!lastUser.equals(value)) {
 								playMusicFor(value);
 								lastUser = value;
