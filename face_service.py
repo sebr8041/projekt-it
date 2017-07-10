@@ -6,8 +6,10 @@ import time
 import sys
 import os
 import pickle
+import RPi.GPIO as GPIO
 
 path = "/opt/projekt-it/data/"
+pin_number = 37
 
 face_locations = []
 face_encodings = []
@@ -15,6 +17,11 @@ face_encodings = []
 faces_to_compare_faces = []
 faces_to_compare_uuids = []
 
+# setup LED
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(pin_number, GPIO.OUT)
+
+# setup camera
 camera = picamera.PiCamera()
 camera.resolution = (320, 240)
 output = np.empty((240 * 320 * 3), dtype=np.uint8)
@@ -38,9 +45,11 @@ while True:
             		faces_to_compare_uuids.append(uuid)
 			data = new_data
 
-    # take a picture
+    # take a picture and indicate with LED
+    GPIO.output(pin_number, GPIO.HIGH)
     camera.capture(output, format = 'rgb')
     output_shaped = output.reshape((240,320,3))
+    GPIO.output(pin_number, GPIO.LOW)
 
     # recognize face
     face_locations = face_recognition.face_locations(output_shaped)
