@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title></title>
+	<meta name="viewport" content="initial-scale=1.0,width=device-width" />
+	<script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+</head>
+
+<body>
+<h2 id="demo">Status</h2>
+<div id="userinfo"></div>
+
+<script type="text/javascript">
+"use strict";
+var userInfo = $('#userinfo');
+window.setInterval(function () {
+	$.getJSON("/status/value", function( data ) {
+		console.log(data);
+		userInfo.html(data.results);
+	});
+}, 1000);
+</script>
+</body>
+</html>
